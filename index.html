@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Event HUD System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- 🛠 CASUAL ADMIN WINDOW -->
+    <div id="adminMenu" class="casual-window">
+        <div class="casual-header">
+            <span id="title_menuTitle">Event Management</span>
+            <div class="casual-close" onclick="closeAdminMenu()">×</div>
+        </div>
+        <div class="casual-content">
+            <label id="title_labelName">Event Name:</label>
+            <input type="text" id="inputName" placeholder="z.B. Bankraub">
+
+            <label id="title_labelDate">Datum auswählen:</label>
+            <input type="date" id="inputDate">
+
+            <label id="title_labelTime">Uhrzeit:</label>
+            <input type="time" id="inputTime">
+
+            <label id="title_labelDiscord">Discord Link:</label>
+            <input type="text" id="inputDiscord" placeholder="https://discord.gg...">
+
+            <label id="title_labelNote">Globale Notiz für alle Spieler (optional):</label>
+            <input type="text" id="inputNote" placeholder="Mitzubringen: Westen / Maskenpflicht...">
+
+            <label id="title_labelDispatch">Dispatch Notiz für die Polizei (optional):</label>
+            <input type="text" id="inputDispatch" placeholder="Schüsse am Würfelpark! Sofort ausrücken...">
+
+            <!-- Buttons -->
+            <button onclick="submitEvent()" class="action-btn start-btn" id="title_btnStart">Ankündigung einblenden</button>
+            <button onclick="stopEvent()" class="action-btn stop-btn" id="title_btnStop">Ankündigung ausblenden</button>
+            <button onclick="closeAdminMenu()" class="action-btn close-btn" id="title_btnClose">Menü schließen</button>
+        </div>
+    </div>
+
+    <!-- 📢 PUBLIC EVENT HUD -->
+    <div id="eventInfo" class="design-hud">
+        <div id="card">
+            <div id="header">📢 EVENT ANKÜNDIGUNG</div>
+            <div id="body">
+                <div id="name">Event-Name</div>
+                <div id="dateTime"><span id="date">00.00.0000</span> um <span id="time">00:00 Uhr</span></div>
+                <div id="countdown">Lädt Countdown...</div>
+                <div id="playerCount">👥 Teilnehmer: 0</div>
+                <div id="note"></div> 
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

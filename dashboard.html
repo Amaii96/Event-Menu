@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>External Event Dashboard & Preview</title>
+    <style>
+        body {
+            background-color: #121212;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 50px;
+            height: 100vh;
+            margin: 0;
+        }
+        .dashboard-window {
+            width: 380px;
+            background: #1a1a1a;
+            border: 1px solid #2d2d2d;
+            border-radius: 12px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.7);
+            padding: 25px;
+        }
+        h2 { margin-top: 0; color: #ff8c00; font-size: 20px; border-bottom: 1px solid #2d2d2d; padding-bottom: 10px; }
+        label { display: block; font-size: 12px; margin-top: 14px; color: #aaa; font-weight: 500; }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 4px;
+            background: #262626;
+            border: 1px solid #363636;
+            border-radius: 6px;
+            color: #fff;
+            box-sizing: border-box;
+        }
+        input:focus { border-color: #ff8c00; outline: none; }
+        .action-btn {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .start-btn { background: #2e7d32; margin-top: 22px; }
+        .start-btn:hover { background: #388e3c; }
+        .stop-btn { background: #c62828; }
+        .stop-btn:hover { background: #d32f2f; }
+        .status-box { margin-top: 15px; font-size: 11px; text-align: center; color: #888; }
+
+        /* LIVE INGAME-PREVIEW STYLE */
+        .preview-container {
+            width: 340px;
+            padding: 20px;
+            background: radial-gradient(circle, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0.2) 100%);
+            border: 1px dashed #444;
+            border-radius: 8px;
+            position: relative;
+        }
+        .preview-title {
+            position: absolute;
+            top: -10px;
+            left: 15px;
+            background: #121212;
+            padding: 0 8px;
+            font-size: 11px;
+            color: #888;
+            letter-spacing: 1px;
+        }
+        .design-hud { 
+            border-left: 4px solid #ff8c00; 
+            padding-left: 14px;
+        }
+        #p_header { font-size: 11px; font-weight: 800; letter-spacing: 1.5px; color: #ff8c00; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); margin-bottom: 2px; }
+        #p_name { font-size: 20px; font-weight: 700; text-transform: uppercase; text-shadow: 2px 2px 4px rgba(0,0,0,1); margin: 0; }
+        #p_dateTime { font-size: 13px; opacity: 0.9; margin-top: 2px; text-shadow: 1px 1px 3px rgba(0,0,0,0.9); }
+        #p_countdown { font-size: 13px; font-weight: 700; margin-top: 5px; color: #ff4d4d; text-shadow: 1px 1px 3px rgba(0,0,0,0.9); }
+        #p_note { margin-top: 8px; padding-top: 6px; font-size: 12px; opacity: 0.85; border-top: 1px solid rgba(255, 255, 255, 0.2); text-shadow: 1px 1px 3px rgba(0,0,0,0.9); display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-window">
+        <h2>Web Event Controller</h2>
+        
+        <label>Event Name:</label>
+        <input type="text" id="webName" value="Bankraub" oninput="updatePreview()">
+
+        <label>Datum auswählen:</label>
+        <input type="date" id="webDate" value="2026-07-03" oninput="updatePreview()">
+
+        <label>Uhrzeit:</label>
+        <input type="time" id="webTime" value="20:00" oninput="updatePreview()">
+
+        <label>Discord Link:</label>
+        <input type="text" id="webDiscord" value="https://discord.gg">
+
+        <label>Zusätzliche Notiz (optional):</label>
+        <input type="text" id="webNote" placeholder="z.B. Maskenpflicht" oninput="updatePreview()">
+
+        <button onclick="sendToServer('startEvent')" class="action-btn start-btn">Ankündigung einblenden</button>
+        <button onclick="sendToServer('stopEvent')" class="action-btn stop-btn">Ankündigung ausblenden</button>
+        
+        <div class="status-box" id="status">Bereit für Befehle...</div>
+    </div>
+
+    <div class="preview-container">
+        <div class="preview-title">LIVE HUD PREVIEW</div>
+        <div class="design-hud">
+            <div id="p_header">📢 EVENT ANKÜNDIGUNG</div>
+            <div id="p_name">Bankraub</div>
+            <div id="p_dateTime"><span id="p_date">03.07.2026</span> um <span id="p_time">20:00 Uhr</span></div>
+            <div id="p_countdown">Startet in: 00h 00m 00s</div>
+            <div id="p_note">ℹ️ Maskenpflicht</div>
+        </div>
+    </div>
+
+<script>
+    // ⚠️ HIER DEN EVENTUELL ABWEICHENDEN ORDNERNAMEN ANPASSEN!
+    const SERVER_ENDPOINT = "http://localhost:30120/eventhud";
+
+    let previewInterval = null;
+
+    function updatePreview() {
+        if (previewInterval) clearInterval(previewInterval);
+
+        const name = document.getElementById("webName").value;
+        const rawDate = document.getElementById("webDate").value;
+        const rawTime = document.getElementById("webTime").value;
+        const note = document.getElementById("webNote").value;
+
+        document.getElementById("p_name").innerText = name;
+        
+        if (rawDate && rawDate.includes("-")) {
+            const parts = rawDate.split("-");
+            document.getElementById("p_date").innerText = `${parts[2]}.${parts[1]}.${parts[0]}`;
+        }
+        document.getElementById("p_time").innerText = rawTime + " Uhr";
+
+        const noteEl = document.getElementById("p_note");
+        if (note && note.trim() !== "") {
+            noteEl.innerText = "ℹ️ " + note;
+            noteEl.style.display = "block";
+        } else {
+            noteEl.style.display = "none";
+        }
+
+        const targetDateTime = new Date(`${rawDate}T${rawTime}:00`);
+        
+        previewInterval = setInterval(function() {
+            const now = new Date().getTime();
+            const distance = targetDateTime.getTime() - now;
+
+            if (distance > 0) {
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                document.getElementById("p_countdown").innerText = `Startet in: ${hours.toString().padStart(2, '0')}h ${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
+            } else {
+                document.getElementById("p_countdown").innerText = `🔴 Aktiv seit: 0h 0m`;
+            }
+        }, 1000);
+    }
+
+    function sendToServer(endpoint) {
+        const statusBox = document.getElementById("status");
+        statusBox.innerText = "Sende Befehl...";
+
+        const payload = {
+            name: document.getElementById("webName").value,
+            date: document.getElementById("webDate").value,
+            time: document.getElementById("webTime").value,
+            discord: document.getElementById("webDiscord").value,
+            note: document.getElementById("webNote").value,
+            style: "hud"
+        };
+
+        fetch(`${SERVER_ENDPOINT}/${endpoint}`, {
+            method: 'POST',
+            mode: 'cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(response => {
+            if(response.ok) {
+                statusBox.innerText = "✓ Befehl erfolgreich an FiveM übertragen!";
+                statusBox.style.color = "#2e7d32";
+            } else {
+                statusBox.innerText = "✗ Fehler: Status " + response.status;
+                statusBox.style.color = "#c62828";
+            }
+        })
+        .catch(err => {
+            statusBox.innerText = "✗ Verbindung fehlgeschlagen! Bitte Ordnername in Zeile 79 anpassen.";
+            statusBox.style.color = "#c62828";
+        });
+    }
+
+    updatePreview();
+</script>
+</body>
+</html>
