@@ -1,4 +1,4 @@
-# Event HUD System with Dimension Counter & Police Dispatch
+# Event Ankündigungs-Management
 
 Ein hochentwickeltes und minimalistisches Event-Ankündigungssystem für FiveM (kompatibel mit ESX und QBCore). Das Skript ermöglicht es der Administration, Events über ein In-Game-Dashboard zu planen. Spieler erhalten eine freischwebende visuelle Anzeige inklusive Live-Countdown, automatischer Teilnehmererfassung und integriertem Fraktions-Dispatch.
 
@@ -6,7 +6,7 @@ Ein hochentwickeltes und minimalistisches Event-Ankündigungssystem für FiveM (
 
 ### Visuelle Integration & HUD
 * **Minimalistisches Design:** Das HUD verzichtet auf blockierende Hintergründe und schwebende Boxen. Es fügt sich freischwebend in der oberen linken Bildschirmecke ein.
-* **Farbgebung:** Das Design besitzt eine feste, orangefarbene Linienführung und nutzt optimierte Textschatten zur Gewährleistung der Lesbarkeit vor hellen und dunklen Hintergründen.
+* **Farbgebung:** Man kann die Hauptfarbe in der Config ändern.
 * **Globale Notizen:** Optionale Einblendung von Zusatzregeln oder Ausrüstungsbeschränkungen direkt unterhalb der Zeitanzeige.
 
 ### Zeitsteuerung & Audio
@@ -17,10 +17,22 @@ Ein hochentwickeltes und minimalistisches Event-Ankündigungssystem für FiveM (
 ### Dimensions-Schutz & Teilnehmerzähler
 * **Live-Teilnehmerzähler:** Der Server prüft im Sekundentakt die Routing-Bucket-IDs und zeigt die aktuelle Spieleranzahl der Event-Dimension im HUD an.
 * **Automatisches Ausblenden:** Tritt ein Spieler der konfigurierten Event-Dimension bei, blendet sich das HUD selbstständig aus, um den Bildschirm frei von Overlays zu halten. Beim Verlassen der Dimension wird das HUD wieder eingebunden.
+**Flexible Befehlsnamen:** Die Commands können in der Config frei umbenannt werden, falls andere Server-Skripte die Standardnamen blockieren.
+
+### Sicherheit & Performance (Anti-Cheat)
+* **Server-Side Exploit-Schutz:** Die Server-Trigger sind komplett abgesichert. Versucht ein Cheater/Modder die Events ohne administrative Rechte über einen externen Executor auszulösen, blockiert das Skript die Aktion und schlägt in allen Konsolen Alarm.
+
+### Erweitertes Admin- & Konsolen-Logging (Doppel-Log)
+Alle administrativen Aktionen und Fehler werden zeitgleich im **Server-Terminal (txAdmin/CMD)** sowie farbcodiert in der **In-Game-Konsole (F8)** aller Teammitglieder ausgegeben:
+* **Start-Überwachung:** Protokolliert, welcher Administrator (Name & ID) welches Event gestartet hat.
+* **Fremdbeendigungs-Alarm:** Erkennt und loggt, wenn Admin B ein Event schließt, das ursprünglich von Admin A gestartet wurde (`[Event-HUD] FREMDBEENDIGUNG: ...`).
+* **Missbrauchs-Protokoll:** Versucht ein Spieler einem Event beizutreten, obwohl keines läuft, oder meldet sich ab, ohne angemeldet zu sein, wird dies als roter Fehler markiert.
+* **Akustisches F8-Feedback:** Bei administrativen Fehlern oder Exploit-Warnungen ertönt für das Server-Team ein unaufdringlicher Audio-Warnsound, damit Logs im schnellen Textfluss nicht übersehen werden.
+
 
 ### Interaktionen & Fraktions-Schnittstellen
 * **ox_target Kompatibilität:** Optionale Registrierung globaler Spieler-Optionen zum Aufrufen des Discord-Event-Links oder zum lokalen Ausblenden des HUDs. Per Konfiguration vollständig deaktivierbar.
-* **Automatisierter Polizei-Dispatch:** Optionale Übermittlung eines anonymen Leitstellenrufs an alle Einheiten des PD/MD exakt zum Startzeitpunkt des Events. Der Dispatch enthält die Ersteller-Koordinaten und den im Admin-Menü definierten Text.
+* **Automatisierter Dispatch:** Optionale Übermittlung eines anonymen Leitstellenrufs an alle Einheiten des PD/MD exakt zum Startzeitpunkt des Events. Der Dispatch enthält die Ersteller-Koordinaten und den im Admin-Menü definierten Text.
 
 ---
 
@@ -40,10 +52,11 @@ Die Steuerung des Skripts erfolgt zentral über die `config.lua`:
 
 * `Config.Language`: Spracheinstellung für die Lokalisierung (`de` / `en`).
 * `Config.ErlaubteGruppen`: Definition der administrativen Framework-Ränge für den Zugriff auf das `/eventmenu`.
-* `Config.EventDimension`: Die Routing-Bucket-ID, in welcher das Event stattfindet.
 * `Config.UseOxTarget`: Schalter (`true`/`false`) zur Aktivierung oder Deaktivierung der `ox_target`-Schnittstelle.
-* `Config.ShowNotes`: Schalter (`true`/`false`) zur generellen Erlaubnis von globalen Notizen im Spieler-HUD.
-* `Config.HUD`: Feinjustierung von Textfarben, Schriftgrößen und Bildschirmabständen.
+**`Config.HUD.HauptFarbe`:** Ändert die Akzentfarbe des gesamten Systems (HUD-Ränder, Teilnehmer-Text und Aktivierungs-Button).
+* **`Config.JoinCommand` / `Config.LeaveCommand`:** Bestimmt die In-Game-Befehle für die Spieler (Standard: `/eventjoin` und `/eventleave`).
+* **`Config.NotifyScript`:** Unterstützt Benachrichtigungen für `ox_lib`, `esx`, `qb` oder den Standard-`chat`.
+* **`Config.ShowNotes`:** Schaltet globale Text-Notizen im Spieler-HUD an oder aus.
 
 ---
 
