@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Event HUD Dashboard - Festes Beispiel</title>
+    <!-- Google Fonts & FontAwesome Icons -->
+    <link href="https://googleapis.com" rel="stylesheet">
+    <link rel="stylesheet" href="https://cloudflare.com">
+    
+    <style>
+        :root {
+            --primary-neon: #ff8c00;
+            --bg-window: #161616;
+            --bg-card: rgba(15, 15, 15, 0.85);
+            --bg-input: rgba(255, 255, 255, 0.04);
+            --border-element: rgba(255, 255, 255, 0.08);
+            --text-main: #ffffff;
+            --text-muted: #aaaaaa;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #2c3e50; /* Hintergrundfarbe für die Browser-Vorschau */
+            color: var(--text-main);
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+
+        /* 📢 ANKÜNDIGUNG HUD (FEST LINKS OBEN EINBLENDET) */
+        #eventHUD {
+            position: absolute;
+            top: 25px;
+            left: 25px;
+            width: 340px;
+            background: var(--bg-card);
+            backdrop-filter: blur(8px);
+            border-left: 4px solid var(--primary-neon);
+            border-radius: 0 12px 12px 0;
+            padding: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .hud-header {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--primary-neon);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .hud-title {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            text-transform: uppercase;
+            line-height: 1.1;
+            margin-bottom: 4px;
+        }
+
+        .hud-datetime {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .hud-countdown {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            padding: 6px 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            display: inline-block;
+        }
+
+        .hud-players {
+            font-size: 13px;
+            font-weight: 600;
+            margin-top: 8px;
+            color: var(--primary-neon);
+        }
+
+        .hud-extra {
+            margin-top: 10px;
+            padding-top: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* 🛠️ ADMIN MENÜ DASHBOARD */
+        .admin-window {
+            width: 420px;
+            background: var(--bg-window);
+            border: 1px solid var(--border-element);
+            border-radius: 16px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.6);
+            overflow: hidden;
+        }
+
+        .admin-header {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-element);
+        }
+
+        .admin-header h1 {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .admin-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-input);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 13px;
+            outline: none;
+        }
+
+        /* BUTTONS UNTEN */
+        .button-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 20px;
+            padding-top: 14px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            color: var(--text-main);
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-start { background: linear-gradient(135deg, #2e7d32, #1b5e20); }
+        .btn-stop { background: linear-gradient(135deg, #c62828, #b71c1c); }
+        .btn-close { background: rgba(255, 255, 255, 0.08); color: #dddddd; }
+
+        .pulse { animation: blink 2s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <!-- 📢 EVENT HUD ANKÜNDIGUNG (FEST LINKS OBEN) -->
+    <div id="eventHUD">
+        <div class="hud-header"><i class="fa-solid fa-bullhorn pulse"></i> Event Ankündigung</div>
+        <div class="hud-title">Großer Bankraub</div>
+        <div class="hud-datetime">
+            <i class="fa-regular fa-clock"></i> 24.12.2026 um 21:00 Uhr
+        </div>
+        <div class="hud-countdown">Startet in: 02h 15m 30s</div>
+        <div class="hud-players"><i class="fa-solid fa-users"></i> Teilnehmer: 42</div>
+        <div class="hud-extra"><i class="fa-solid fa-circle-info"></i> Mitzubringen: schwere Westen!</div> 
+        <div class="hud-extra"><i class="fa-brands fa-discord"></i> Link aktiv</div>
+    </div>
+
+    <!-- 🛠️ DASHBOARD WINDOW -->
+    <div class="admin-window">
+        <!-- Überschrift -->
+        <div class="admin-header">
+            <h1>Event Management</h1>
+        </div>
+        
+        <div class="admin-body">
+            <!-- Event Name -->
+            <div class="form-group">
+                <label>Event Name:</label>
+                <input type="text" value="Großer Bankraub">
+            </div>
+
+            <!-- Datum uhrzeit -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Datum:</label>
+                    <input type="text" value="2026-12-24">
+                </div>
+                <div class="form-group">
+                    <label>Uhrzeit:</label>
+                    <input type="text" value="21:00">
+                </div>
+            </div>
+
+            <!-- globale info -->
+            <div class="form-group">
+                <label>Globale Notiz (optional):</label>
+                <input type="text" value="Mitzubringen: schwere Westen!">
+            </div>
+
+            <!-- Dispatch Notify -->
+            <div class="form-group">
+                <label>Dispatch Notiz für Polizei (optional):</label>
+                <input type="text" value="Schüsse am Würfelpark!...">
+            </div>
+
+            <!-- Discord Nachrichten-link -->
+            <div class="form-group">
+                <label>Discord Nachrichten-link (wenn ox-target true):</label>
+                <input type="text" value="https://discord.com">
+            </div>
+
+            <!-- ankündigung ein/ausblenden & menü schließen -->
+            <div class="button-stack">
+                <button class="btn btn-start">
+                    <i class="fa-solid fa-play"></i> Ankündigung einblenden
+                </button>
+                <button class="btn btn-stop">
+                    <i class="fa-solid fa-stop"></i> Ankündigung ausblenden
+                </button>
+                <button class="btn btn-close">
+                    Menü schließen
+                </button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

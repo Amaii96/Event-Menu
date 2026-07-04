@@ -1,9 +1,14 @@
 let countdownInterval = null;
+let eventActive = false; // Speichert den aktuellen Status des Events
+let isButtonCooldown = false; // ⏳ NEU: Verhindert Button-Spam
+
 let textLib = {
     startIn: "Startet in: ",
     activeSince: "🔴 Aktiv seit: ",
     loading: "Lädt Countdown...",
-    hours: "h", minutes: "m", seconds: "s", days: "d"
+    hours: "h", minutes: "m", seconds: "s", days: "d",
+    btnStart: "Ankündigung einblenden",
+    btnStop: "Ankündigung ausblenden"
 }; 
 let allowNotes = true;
 let effectsTriggered = false;
@@ -36,6 +41,7 @@ window.addEventListener("message", function(event) {
         document.getElementById("note").style.fontSize = cfg.SchriftgroesseNotiz;
         
         document.documentElement.style.setProperty('--dynamic-hud-color', '#ff8c00'); 
+        updateToggleButton();
     }
 
     if (event.data.action === "updateCount") {
@@ -43,15 +49,19 @@ window.addEventListener("message", function(event) {
     }
 
     if (event.data.action === "show") {
+        eventActive = true;
+        updateToggleButton();
+
         if (countdownInterval) clearInterval(countdownInterval);
         effectsTriggered = false; 
 
         const rawDate = event.data.date; 
         const rawTime = event.data.time; 
 
+        // 🛠️ Formatiert YYYY-MM-DD sauber zu DD.MM.YYYY
         if (rawDate && rawDate.includes("-")) {
             const parts = rawDate.split("-");
-            document.getElementById("date").innerText = `${parts}.${parts}.${parts}`;
+            document.getElementById("date").innerText = `${parts[2]}.${parts[1]}.${parts[0]}`;
         } else {
             document.getElementById("date").innerText = rawDate;
         }
@@ -101,22 +111,78 @@ window.addEventListener("message", function(event) {
     }
 
     if (event.data.action === "forceShow") { hud.style.display = "block"; }
-    if (event.data.action === "hide") { hud.style.display = "none"; if (countdownInterval) clearInterval(countdownInterval); }
+    if (event.data.action === "hide") { 
+        hud.style.display = "none"; 
+        if (countdownInterval) clearInterval(countdownInterval); 
+        eventActive = false;
+        updateToggleButton();
+    }
     if (event.data.action === "openDiscord" && event.data.url !== "#") { window.open(event.data.url, '_blank'); }
 });
 
-function submitEvent() {
-    const payload = {
-        name: document.getElementById("inputName").value,
-        date: document.getElementById("inputDate").value,
-        time: document.getElementById("inputTime").value,
-        discord: document.getElementById("inputDiscord").value,
-        style: "hud", 
-        note: document.getElementById("inputNote").value,
-        dispatch: document.getElementById("inputDispatch").value
-    };
-    fetch(`https://${GetParentResourceName()}/startEvent`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+// Funktion steuert das Aussehen des Toggle-Buttons
+function updateToggleButton() {
+    const btn = document.getElementById("btnToggle");
+    if (!btn || isButtonCooldown) return; // ⏳ Verhindert visuelle Updates während des Cooldowns
+
+    if (eventActive) {
+        btn.innerText = textLib.btnStop || "Ankündigung ausblenden";
+        btn.className = "action-btn toggle-btn stop-btn";
+        btn.disabled = false;
+    } else {
+        btn.innerText = textLib.btnStart || "Ankündigung einblenden";
+        btn.className = "action-btn toggle-btn start-btn";
+        btn.disabled = false;
+    }
 }
-function stopEvent() { fetch(`https://${GetParentResourceName()}/stopEvent`, { method: 'POST' }); }
+
+// 🔄 NEU: Funktion für die Cooldown-Logik
+function startButtonCooldown() {
+    isButtonCooldown = true;
+    const btn = document.getElementById("btnToggle");
+    let timeLeft = 3; // ⏳ Cooldown Zeit in Sekunden
+
+    btn.disabled = true;
+    btn.style.opacity = "0.6";
+    btn.style.cursor = "not-allowed";
+    btn.innerText = `Bitte warten... (${timeLeft}s)`;
+
+    const cooldownInterval = setInterval(() => {
+        timeLeft--;
+        if (timeLeft <= 0) {
+            clearInterval(cooldownInterval);
+            isButtonCooldown = false;
+            btn.disabled = false;
+            btn.style.opacity = "1";
+            btn.style.cursor = "pointer";
+            updateToggleButton(); // Setzt das korrekte Design wieder ein
+        } else {
+            btn.innerText = `Bitte warten... (${timeLeft}s)`;
+        }
+    }, 1000);
+}
+
+// Entscheidet ob das Event gestartet oder gestoppt werden soll
+function toggleEventState() {
+    if (isButtonCooldown) return; // ⏳ Klick-Blockierung bei Spam
+
+    startButtonCooldown(); // Aktiviert den Cooldown für 3 Sekunden
+
+    if (eventActive) {
+        fetch(`https://${GetParentResourceName()}/stopEvent`, { method: 'POST' });
+    } else {
+        const payload = {
+            name: document.getElementById("inputName").value,
+            date: document.getElementById("inputDate").value,
+            time: document.getElementById("inputTime").value,
+            discord: document.getElementById("inputDiscord").value,
+            style: "hud", 
+            note: document.getElementById("inputNote").value,
+            dispatch: document.getElementById("inputDispatch").value
+        };
+        fetch(`https://${GetParentResourceName()}/startEvent`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    }
+}
+
 function closeAdminMenu() { fetch(`https://${GetParentResourceName()}/closeMenu`, { method: 'POST' }); document.getElementById("adminMenu").style.display = "none"; }
 document.addEventListener("keydown", function(e) { if (e.key === "Escape") { closeAdminMenu(); } });

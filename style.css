@@ -71,6 +71,17 @@ input {
     box-sizing: border-box;
 }
 
+/* 🔄 NEU: Spalten-Layout für Datum & Uhrzeit */
+.admin-row {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+}
+
+.admin-col {
+    flex: 1;
+}
+
 /* BUTTONS */
 .action-btn {
     width: 100%;
@@ -100,6 +111,7 @@ input {
 
 .stop-btn {
     background: #c62828;
+    margin-top: 18px;
 }
 
     .stop-btn:hover {
