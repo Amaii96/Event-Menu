@@ -1,9 +1,8 @@
 local currentDiscordLink = "#"
 local isHUDActive = false      
 local isHUDVisible = false     
-local inEventDimension = false
-local dispatchCoords = nil
 local policeDispatchText = ""
+local dispatchCoords = nil
 
 Citizen.CreateThread(function()
     Citizen.Wait(2000) 
@@ -15,26 +14,14 @@ Citizen.CreateThread(function()
     })
 end)
 
--- 🌌 DIMENSIONS-SCHUTZ SCHLEIFE
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(1000)
-        if isHUDActive then
-            local currentBucket = NetworkGetEntityRoutingBucket(PlayerPedId())
-            if currentBucket == Config.EventDimension and not inEventDimension then
-                inEventDimension = true
-                SendNUIMessage({ action = "hide" })
-            elseif currentBucket ~= Config.EventDimension and inEventDimension then
-                inEventDimension = false
-                if isHUDVisible then SendNUIMessage({ action = "forceShow" }) end
-            end
-        end
-    end
+-- 👁️ Empfängt alle Fehlermeldungen und Logs und schreibt sie in F8
+RegisterNetEvent("eventhud:client:f8Print", function(msg)
+    print(msg)
 end)
 
 -- Ein-/Ausblenden Command für Spieler
 RegisterCommand("eventhud", function()
-    if not isHUDActive or inEventDimension then return end
+    if not isHUDActive then return end
     isHUDVisible = not isHUDVisible
     if isHUDVisible then SendNUIMessage({ action = "forceShow" }) else SendNUIMessage({ action = "hide" }) end
 end, false)
@@ -61,30 +48,29 @@ RegisterNetEvent("eventhud:client:showEvent", function(data)
         note = data.note
     })
     
-    -- 👁️ ERZWUNGEN: Discord-Link Option wird nur registriert, wenn UseOxTarget auf true steht!
     if Config.UseOxTarget then
         exports.ox_target:addGlobalPlayer({
             {
                 name = 'event_hud_discord',
                 icon = 'fa-brands fa-discord',
                 label = Config.Language == "en" and "Open Event Discord" or "Event Discord Link öffnen",
-                canInteract = function() return isHUDActive and isHUDVisible and not inEventDimension and currentDiscordLink ~= "#" end,
+                canInteract = function() return isHUDActive and isHUDVisible and currentDiscordLink ~= "#" end,
                 onSelect = function() SendNUIMessage({ action = "openDiscord", url = currentDiscordLink }) end
             },
             {
                 name = 'event_hud_toggle',
                 icon = 'fa-solid fa-eye-slash',
                 label = Config.Language == "en" and "Toggle Event HUD" or "Event-HUD an/ausblenden",
-                canInteract = function() return isHUDActive and not inEventDimension end,
+                canInteract = function() return isHUDActive end,
                 onSelect = function() ExecuteCommand("eventhud") end
             }
         })
     end
 end)
 
--- 🔊 & 🚨 START CALLBACK (Sound + Dispatch Trigger)
+-- START CALLBACK
 RegisterNUICallback("triggerStartEventEffects", function(_, cb)
-    if isHUDActive and not inEventDimension then
+    if isHUDActive then
         PlaySoundFrontend(-1, "CHECKPOINT_PERFECT", "HUD_MINI_GAME_SOUNDSET", 1)
         if policeDispatchText and policeDispatchText ~= "" and dispatchCoords then
             TriggerServerEvent("eventhud:server:sendPoliceDispatch", dispatchCoords, policeDispatchText)
@@ -108,4 +94,4 @@ RegisterNUICallback("startEvent", function(data, cb)
 end)
 RegisterNUICallback("stopEvent", function(_, cb) TriggerServerEvent("eventhud:server:stopEventGlobal") cb("ok") end)
 RegisterNUICallback("closeMenu", function(_, cb) SetNuiFocus(false, false) cb("ok") end)
-RegisterNetEvent("eventhud:client:updatePlayerCount", function(count) if isHUDActive and not inEventDimension then SendNUIMessage({ action = "updateCount", count = count }) end end)
+RegisterNetEvent("eventhud:client:updatePlayerCount", function(count) if isHUDActive then SendNUIMessage({ action = "updateCount", count = count }) end end)
